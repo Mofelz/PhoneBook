@@ -20,8 +20,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Set up CocoaPods
-        run: sudo gem install cocoapods
+      - name: Install CocoaPods
+        run: |
+            sudo gem install cocoapods -v 1.15.4
+            pod --version
 
       - name: Set up Xcode project (Pod install)
         run: |
