@@ -5,28 +5,39 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/contact.dart';
-import '../services/firebase_service.dart'; // ← Firebase вместо ContactService
+import '../services/contact_service.dart';
 import '../services/theme_service.dart';
 import '../utils/phone_formatter.dart';
 import 'add_contact_screen.dart';
 import 'package:uuid/uuid.dart';
 
 class HomeScreen extends StatefulWidget {
+  final ContactService contactService;
   final void Function(String) onThemeChanged;
 
-  const HomeScreen({super.key, required this.onThemeChanged});
+  const HomeScreen({
+    super.key,
+    required this.contactService,
+    required this.onThemeChanged,
+  });
 
   @override
-  State<HomeScreen> createState() => _MyHomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyHomeScreenState extends State<HomeScreen> {
-  late FirebaseService _firebaseService;
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<Contact>> _contactsFuture;
 
   @override
   void initState() {
     super.initState();
-    _firebaseService = FirebaseService();
+    _loadContacts();
+  }
+
+  void _loadContacts() {
+    setState(() {
+      _contactsFuture = widget.contactService.getAllContacts();
+    });
   }
 
   Future<void> _launchCall(String phone) async {
@@ -59,27 +70,27 @@ class _MyHomeScreenState extends State<HomeScreen> {
     if (result == null) return;
 
     if (result['delete'] == true) {
-      await _firebaseService.deleteContact(contact.id);
+      await widget.contactService.deleteContact(contact.id);
     } else {
-      final updatedContact = Contact(
+      final updated = Contact(
         id: result['id'] ?? contact.id,
         name: result['name'] as String,
         phone: result['phone'] as String,
         avatarBase64: result['avatarBase64'] as String?,
       );
       if (result['id'] != null) {
-        await _firebaseService.updateContact(updatedContact);
+        await widget.contactService.updateContact(updated);
       } else {
-        // Новый контакт (маловероятно при редактировании)
         final newContact = Contact(
           id: const Uuid().v4(),
           name: result['name'] as String,
           phone: result['phone'] as String,
           avatarBase64: result['avatarBase64'] as String?,
         );
-        await _firebaseService.addContact(newContact);
+        await widget.contactService.addContact(newContact);
       }
     }
+    _loadContacts();
   }
 
   void _addNewContact() async {
@@ -95,7 +106,8 @@ class _MyHomeScreenState extends State<HomeScreen> {
         phone: result['phone'] as String,
         avatarBase64: result['avatarBase64'] as String?,
       );
-      await _firebaseService.addContact(contact);
+      await widget.contactService.addContact(contact);
+      _loadContacts();
     }
   }
 
@@ -160,16 +172,19 @@ class _MyHomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<Contact>>(
-        stream: _firebaseService.getContactsStream(),
+      body: FutureBuilder<List<Contact>>(
+        future: _contactsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Ошибка: ${snapshot.error}'));
+          }
+          final contacts = snapshot.data ?? [];
+          if (contacts.isEmpty) {
             return const Center(child: Text('Нет контактов'));
           }
-          final contacts = snapshot.data!;
           return ListView.builder(
             itemCount: contacts.length,
             itemBuilder: (context, index) {
@@ -187,23 +202,25 @@ class _MyHomeScreenState extends State<HomeScreen> {
                     child: contact.avatarBase64 != null
                         ? null
                         : Text(
-                            contact.name[0].toUpperCase(),
+                            contact.name?.isNotEmpty == true
+                                ? contact.name![0].toUpperCase()
+                                : '?',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
                             ),
                           ),
                   ),
-                  title: Text(contact.name),
-                  subtitle: Text(formatPhoneNumber(contact.phone)),
+                  title: Text(contact.name ?? ''),
+                  subtitle: Text(formatPhoneNumber(contact.phone ?? '')),
                   trailing: kIsWeb
                       ? IconButton(
                           icon: const Icon(Icons.copy, color: Colors.blue),
-                          onPressed: () => _copyPhone(contact.phone),
+                          onPressed: () => _copyPhone(contact.phone ?? ''),
                         )
                       : IconButton(
                           icon: const Icon(Icons.call, color: Colors.green),
-                          onPressed: () => _launchCall(contact.phone),
+                          onPressed: () => _launchCall(contact.phone ?? ''),
                         ),
                   onTap: () => _editContact(contact),
                   onLongPress: () {
@@ -219,7 +236,8 @@ class _MyHomeScreenState extends State<HomeScreen> {
                           ),
                           TextButton(
                             onPressed: () {
-                              _firebaseService.deleteContact(contact.id);
+                              widget.contactService.deleteContact(contact.id);
+                              _loadContacts();
                               Navigator.pop(ctx);
                             },
                             child: const Text(

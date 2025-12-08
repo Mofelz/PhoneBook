@@ -1,16 +1,10 @@
 // lib/main.dart
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'firebase_options.dart'; // ← сгенерированный файл
 import 'screens/home_screen.dart';
-import 'services/theme_service.dart'; // оставляем для темы
+import 'services/contact_service.dart';
+import 'services/theme_service.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔥 Инициализация Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
+void main() {
   runApp(const MyApp());
 }
 
@@ -79,7 +73,10 @@ class _MyAppState extends State<MyApp> {
           brightness: Brightness.dark,
         ),
       ),
-      home: HomeScreen(onThemeChanged: _updateTheme),
+      home: HomeScreen(
+        contactService: ContactService(),
+        onThemeChanged: _updateTheme,
+      ),
     );
   }
 }
