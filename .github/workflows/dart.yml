@@ -6,7 +6,7 @@ on:
 jobs:
   build-ios:
     name: PhoneBookIOS
-    runs-on: macos-14  # ← Xcode 15+, Apple Silicon support
+    runs-on: macos-14
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,14 +20,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # 🔧 КРИТИЧЕСКИ ВАЖНЫЙ ШАГ: фиксируем CocoaPods 1.14.3
+      - name: Set up CocoaPods 1.14.3
+        run: |
+          sudo gem uninstall cocoapods -a --ignore-dependencies
+          sudo gem install cocoapods -v 1.14.3
+
       - name: Set up Xcode project (Pod install)
         run: |
           cd ios
           pod deintegrate || true
           pod cache clean --all
           pod install --repo-update
-        env:
-          FLUTTER_ROOT: ${{ runner.tool_cache }}/Flutter/3.24.0-stable/macos/flutter  # ← уточните версию при необходимости
 
       - name: Build iOS (no code signing)
         run: flutter build ios --release --no-codesign
@@ -35,7 +39,7 @@ jobs:
       - name: Create IPA
         run: |
           cd build/ios/iphoneos
-          mkdir Payload
+          mkdir -p Payload
           mv Runner.app Payload/
           zip -qry9 FlutterIpaExport.ipa Payload
 
