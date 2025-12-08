@@ -20,11 +20,8 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 🔧 КРИТИЧЕСКИ ВАЖНЫЙ ШАГ: фиксируем CocoaPods 1.14.3
-      - name: Set up CocoaPods 1.14.3
-        run: |
-          sudo gem uninstall cocoapods -a --ignore-dependencies
-          sudo gem install cocoapods -v 1.14.3
+      - name: Set up CocoaPods
+        run: sudo gem install cocoapods
 
       - name: Set up Xcode project (Pod install)
         run: |
