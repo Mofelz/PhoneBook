@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "77449226628",
+    "project_id": "phonebook-a9542",
+    "storage_bucket": "phonebook-a9542.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77449226628:android:e349f15eaaff01deea95d1",
+        "android_client_info": {
+          "package_name": "com.example.sabaca"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFum6_ck5P4u6eXmY6aTb_Aw_50WBB_5I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
