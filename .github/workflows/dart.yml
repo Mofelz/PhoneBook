@@ -6,37 +6,44 @@ on:
 jobs:
   build-ios:
     name: PhoneBookIOS
-    runs-on: macos-latest
+    runs-on: macos-14  # ← Xcode 15+, Apple Silicon support
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           architecture: x64
-      - run: flutter pub get
-      
 
-      - run: pod repo update
-        working-directory: ios
+      - name: Install dependencies
+        run: flutter pub get
 
-      - run: flutter build ios --release --no-codesign
+      - name: Set up Xcode project (Pod install)
+        run: |
+          cd ios
+          pod deintegrate || true
+          pod cache clean --all
+          pod install --repo-update
+        env:
+          FLUTTER_ROOT: ${{ runner.tool_cache }}/Flutter/3.24.0-stable/macos/flutter  # ← уточните версию при необходимости
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      - name: Build iOS (no code signing)
+        run: flutter build ios --release --no-codesign
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      - name: Create IPA
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          mv Runner.app Payload/
+          zip -qry9 FlutterIpaExport.ipa Payload
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
-
-      - name: Upload binaries to release
+      - name: Upload IPA to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
+          tag: v1.0.0
           overwrite: true
-          body: "This is first release"
+          body: "First iOS release"
