@@ -17,17 +17,22 @@ jobs:
           channel: 'stable'
           architecture: x64
 
-      - name: Install dependencies
-        run: flutter pub get
+      - name: Clean and install dependencies
+        run: |
+          flutter clean
+          rm -f pubspec.lock
+          flutter pub get
 
       - name: Install CocoaPods
         run: |
-            sudo gem install cocoapods -v 1.15.4
-            pod --version
+          sudo gem install cocoapods -v 1.15.4
+          pod --version
 
-      - name: Set up Xcode project (Pod install)
+      - name: Set up Xcode project (update Podfile + Pod install)
         run: |
           cd ios
+          # Увеличиваем iOS deployment target до 12.0+ для Xcode 16
+          sed -i '' 's/platform :ios, .*/platform :ios, "12.0"/' Podfile
           pod deintegrate || true
           pod cache clean --all
           pod install --repo-update
@@ -49,4 +54,4 @@ jobs:
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0.0
           overwrite: true
-          body: "First iOS release"
+          body: "iOS release build"
