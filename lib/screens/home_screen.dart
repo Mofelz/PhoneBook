@@ -42,7 +42,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _launchCall(String phone) async {
     if (kIsWeb) return;
-    await launchUrl(Uri(scheme: 'tel', path: phone));
+
+    // Извлекаем только цифры
+    final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+
+    String dialNumber;
+    if (digitsOnly.length == 11) {
+      if (digitsOnly[0] == '8') {
+        dialNumber = '+7${digitsOnly.substring(1)}';
+      } else if (digitsOnly[0] == '7') {
+        dialNumber = '+7${digitsOnly.substring(1)}';
+      } else {
+        dialNumber = digitsOnly; // fallback
+      }
+    } else if (digitsOnly.length == 10) {
+      // Возможно, номер без кода страны (редко, но бывает)
+      dialNumber = '+7$digitsOnly';
+    } else {
+      dialNumber = digitsOnly; // fallback
+    }
+
+    await launchUrl(Uri(scheme: 'tel', path: dialNumber));
   }
 
   Future<void> _copyPhone(String phone) async {

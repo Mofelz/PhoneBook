@@ -42,7 +42,29 @@ class _AddContactScreenState extends State<AddContactScreen> {
     _nameController.text = widget.name ?? '';
     _avatarBase64 = widget.avatarBase64;
     if (widget.phone != null) {
-      _phoneController.text = widget.phone!.replaceAll(RegExp(r'\D'), '');
+      // Извлекаем только цифры (ожидаем 11 цифр, например: 79991234567)
+      final digitsOnly = widget.phone!.replaceAll(RegExp(r'\D'), '');
+      // Убеждаемся, что номер начинается с 7 (если длина 11 и первая цифра 8 → заменяем на 7)
+      String normalizedDigits;
+      if (digitsOnly.length == 11) {
+        if (digitsOnly[0] == '8') {
+          normalizedDigits = '7' + digitsOnly.substring(1);
+        } else if (digitsOnly[0] == '7') {
+          normalizedDigits = digitsOnly;
+        } else {
+          // Если не 7 и не 8 — оставляем как есть (редкий случай)
+          normalizedDigits = digitsOnly;
+        }
+      } else {
+        normalizedDigits = digitsOnly;
+      }
+      // Применяем маску к нормализованным цифрам
+      _phoneController.text = _phoneMaskFormatter
+          .formatEditUpdate(
+            TextEditingValue(text: ''),
+            TextEditingValue(text: normalizedDigits),
+          )
+          .text;
     }
   }
 
@@ -131,7 +153,9 @@ class _AddContactScreenState extends State<AddContactScreen> {
                     Navigator.pop(context, {
                       'id': widget.id,
                       'name': _nameController.text.trim(),
-                      'phone': _phoneMaskFormatter.getUnmaskedText(),
+                      'phone': _normalizePhoneNumber(
+                        _phoneMaskFormatter.getUnmaskedText(),
+                      ),
                       'avatarBase64': _avatarBase64,
                     });
                   }
@@ -153,4 +177,13 @@ class _AddContactScreenState extends State<AddContactScreen> {
       ),
     );
   }
+}
+
+String _normalizePhoneNumber(String rawDigits) {
+  if (rawDigits.length == 11) {
+    if (rawDigits[0] == '8') {
+      return '7${rawDigits.substring(1)}';
+    }
+  }
+  return rawDigits;
 }
