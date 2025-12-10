@@ -3,6 +3,9 @@ name: iOS-build
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write  # Разрешает создание releases и загрузку assets
+
 jobs:
   build-ios:
     name: PhoneBookIOS
@@ -57,5 +60,3 @@ jobs:
           files: build/ios/iphoneos/FlutterIpaExport.ipa
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
