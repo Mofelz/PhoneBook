@@ -1,6 +1,5 @@
 // lib/services/contact_service.dart
 import 'dart:async';
-import 'package:sembast/sembast.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart'; // для getApplicationDocumentsDirectory

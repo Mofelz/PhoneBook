@@ -202,8 +202,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: contact.avatarBase64 != null
                         ? null
                         : Text(
-                            contact.name?.isNotEmpty == true
-                                ? contact.name![0].toUpperCase()
+                            contact.name.isNotEmpty == true
+                                ? contact.name[0].toUpperCase()
                                 : '?',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
