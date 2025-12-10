@@ -47,29 +47,15 @@ jobs:
           zip -qry9 FlutterIpaExport.ipa Payload
 
       - name: Create Release & Upload IPA
-        run: |
-          # Создаем release через GitHub API
-          RESPONSE=$(curl -L \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/${{ github.repository }}/releases \
-            -d '{
-              "tag_name": "v1.0.0",
-              "name": "iOS v1.0.0",
-              "body": "iOS release build",
-              "draft": false,
-              "prerelease": false
-            }')
-          
-          # Получаем upload URL из ответа
-          UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.upload_url' | sed 's/{?name,label}//')
-          
-          # Загружаем IPA
-          curl -L \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/zip" \
-            --data-binary @build/ios/iphoneos/FlutterIpaExport.ipa \
-            "$UPLOAD_URL?name=FlutterIpaExport.ipa"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: iOS v1.0.0
+          body: |
+            iOS release build
+            - Flutter IPA for distribution
+          files: build/ios/iphoneos/FlutterIpaExport.ipa
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
