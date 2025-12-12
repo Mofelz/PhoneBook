@@ -1,16 +1,20 @@
-# sabaca
+# 📱 Contacts Manager
 
-A new Flutter project.
+> Простое и удобное приложение для управления контактами с поддержкой изображений, форматированным вводом телефона и сохранением данных.
 
-## Getting Started
+![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white)
+![Web](https://img.shields.io/badge/Web-%23323330.svg?style=for-the-badge&logo=web&logoColor=white)
 
-This project is a starting point for a Flutter application.
+## 🌟 Возможности
 
-A few resources to get you started if this is your first Flutter project:
+- ✅ Добавление, редактирование и удаление контактов  
+- 📸 Поддержка загрузки и отображения аватаров  
+- 📞 Автоматическое форматирование телефонных номеров (формат: `+7 (XXX) XXX-XX-XX`)  
+- 💾 Локальное хранение данных с использованием **Sembast**  
+- 🌐 Полная поддержка веб-платформы с сохранением данных между сессиями  
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 📦 Установка
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Убедитесь, что у вас установлен [Flutter SDK](https://docs.flutter.dev/get-started/install).
+2. Клонируйте репозиторий:
