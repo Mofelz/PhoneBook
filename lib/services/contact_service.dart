@@ -63,16 +63,12 @@ class ContactService {
 
   Future<List<Contact>> getAllContacts() async {
     final db = await _db;
-    // ❗ Исправление: sortBy заменён на finder с SortOrder
     final finder = Finder(sortOrders: [SortOrder('name')]);
     final records = await _store.find(db, finder: finder);
     return records.map((r) => Contact.fromMap(r.value)).toList();
   }
 }
 
-// Определяем, Web или нет
 bool get isWeb {
-  // В Dart на Web: 0 == 0.0 → true
-  // ignore: undefined_identifier
   return identical(0, 0.0);
 }

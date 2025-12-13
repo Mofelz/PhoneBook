@@ -81,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => AddContactScreen(
           id: contact.id,
           name: contact.name,
+          surname: contact.surname,
           phone: contact.phone,
           avatarBase64: contact.avatarBase64,
         ),
@@ -95,6 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final updated = Contact(
         id: result['id'] ?? contact.id,
         name: result['name'] as String,
+        surname: result['surname'] as String?,
         phone: result['phone'] as String,
         avatarBase64: result['avatarBase64'] as String?,
       );
@@ -104,6 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final newContact = Contact(
           id: const Uuid().v4(),
           name: result['name'] as String,
+          surname: result['surname'] as String?,
           phone: result['phone'] as String,
           avatarBase64: result['avatarBase64'] as String?,
         );
@@ -123,6 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final contact = Contact(
         id: const Uuid().v4(),
         name: result['name'] as String,
+        surname: result['surname'] as String?,
         phone: result['phone'] as String,
         avatarBase64: result['avatarBase64'] as String?,
       );

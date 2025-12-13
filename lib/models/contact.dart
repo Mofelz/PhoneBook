@@ -1,12 +1,14 @@
 class Contact {
   final String id;
   final String name;
+  final String? surname;
   final String phone;
-  final String? avatarBase64; // null = нет фото, иначе — base64-строка
+  final String? avatarBase64;
 
   Contact({
     required this.id,
     required this.name,
+    this.surname,
     required this.phone,
     this.avatarBase64,
   });
@@ -15,6 +17,7 @@ class Contact {
     return {
       'id': id,
       'name': name,
+      'surname': surname,
       'phone': phone,
       'avatarBase64': avatarBase64,
     };
@@ -24,6 +27,7 @@ class Contact {
     return Contact(
       id: map['id'] as String,
       name: map['name'] as String,
+      surname: map['surname'] as String?,
       phone: map['phone'] as String,
       avatarBase64: map['avatarBase64'] as String?,
     );
