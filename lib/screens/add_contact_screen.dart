@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AddContactScreen extends StatefulWidget {
   final String? id;
@@ -87,15 +88,40 @@ class _AddContactScreenState extends State<AddContactScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? 'Редактировать' : 'Новый контакт'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Валидация и отправка результата
+              if (_formKey.currentState!.validate()) {
+                Navigator.pop(context, {
+                  'id': widget.id,
+                  'name': _nameController.text.trim(),
+                  'surname': _surnameController.text.trim(),
+                  'phone': _normalizePhoneNumber(
+                    _phoneMaskFormatter.getUnmaskedText(),
+                  ),
+                  'avatarBase64': _avatarBase64,
+                });
+              }
+            },
+            child: Text(
+              _isEditing ? 'Сохранить' : 'Добавить',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(0),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Аватар + надпись (центрировано)
+              // Аватар + надпись
               Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -126,11 +152,37 @@ class _AddContactScreenState extends State<AddContactScreen> {
                       ),
                     ),
                     if (_avatarBase64 == null)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Добавить фото',
-                          style: TextStyle(fontSize: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: SizedBox(
+                          width: 120, // ширина кнопки
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                63,
+                                59,
+                                59,
+                              ),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 4,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: _pickImage,
+                            child: const Text(
+                              'Добавить фото',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -143,20 +195,20 @@ class _AddContactScreenState extends State<AddContactScreen> {
                 decoration: BoxDecoration(
                   color: const Color.fromARGB(
                     255,
-                    117,
-                    115,
-                    115,
+                    80,
+                    74,
+                    74,
                   ), // очень светлый серый фон
                   borderRadius: BorderRadius.circular(0),
                 ),
                 child: TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
-                    labelText: 'Имя',
+                    hintText: 'Имя',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 16,
+                      vertical: 8,
                     ),
                   ),
                   validator: (v) => v!.trim().isEmpty ? 'Введите имя' : null,
@@ -166,17 +218,17 @@ class _AddContactScreenState extends State<AddContactScreen> {
               // Поле "Фамилия" с фоном
               Container(
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 117, 115, 115),
+                  color: const Color.fromARGB(255, 80, 74, 74),
                   borderRadius: BorderRadius.circular(0),
                 ),
                 child: TextFormField(
                   controller: _surnameController,
                   decoration: const InputDecoration(
-                    labelText: 'Фамилия',
+                    hintText: 'Фамилия',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 16,
+                      vertical: 8,
                     ),
                   ),
                   validator: (v) =>
@@ -187,7 +239,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
               // Поле "Телефон" — без фона (как раньше, или тоже можно добавить)
               Container(
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 117, 115, 115),
+                  color: const Color.fromARGB(255, 80, 74, 74),
                   borderRadius: BorderRadius.circular(0),
                 ),
                 child: TextFormField(
@@ -195,11 +247,11 @@ class _AddContactScreenState extends State<AddContactScreen> {
                   inputFormatters: [_phoneMaskFormatter],
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'Телефон',
+                    hintText: 'Телефон',
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,
-                      vertical: 16,
+                      vertical: 8,
                     ),
                   ),
                   validator: (value) {
@@ -217,34 +269,25 @@ class _AddContactScreenState extends State<AddContactScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Кнопки
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    Navigator.pop(context, {
-                      'id': widget.id,
-                      'name': _nameController.text.trim(),
-                      'surname': _surnameController.text.trim(),
-                      'phone': _normalizePhoneNumber(
-                        _phoneMaskFormatter.getUnmaskedText(),
-                      ),
-                      'avatarBase64': _avatarBase64,
-                    });
-                  }
-                },
-                child: Text(_isEditing ? 'Сохранить' : 'Добавить'),
-              ),
+              // Кнопка удалить
               if (_isEditing)
-                ElevatedButton(
-                  onPressed: () =>
-                      Navigator.pop(context, {'id': widget.id, 'delete': true}),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+                Center(
+                  child: SizedBox(
+                    width: 120,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, {
+                        'id': widget.id,
+                        'delete': true,
+                      }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Удалить'),
+                    ),
                   ),
-                  child: const Text('Удалить'),
                 ),
             ],
           ),
@@ -261,4 +304,16 @@ String _normalizePhoneNumber(String rawDigits) {
     }
   }
   return rawDigits;
+}
+
+Widget? _buildClearIcon(TextEditingController controller) {
+  if (kIsWeb) return null; // на вебе не показываем
+  return controller.text.isEmpty
+      ? null
+      : IconButton(
+          icon: const Icon(Icons.clear, size: 18),
+          onPressed: () {
+            controller.clear();
+          },
+        );
 }

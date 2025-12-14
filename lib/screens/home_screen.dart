@@ -189,6 +189,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Телефонная книга'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: _addNewContact,
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.brightness_medium),
@@ -278,10 +282,6 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewContact,
-        child: const Icon(Icons.add),
       ),
     );
   }
