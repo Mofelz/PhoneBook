@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AddContactScreen extends StatefulWidget {
   final String? id;
@@ -69,6 +68,74 @@ class _AddContactScreenState extends State<AddContactScreen> {
     }
   }
 
+  bool _hasUnsavedChanges() {
+    final nameChanged = _nameController.text.trim() != (widget.name ?? '');
+    final surnameChanged =
+        _surnameController.text.trim() != (widget.surname ?? '');
+    final phoneChanged =
+        _phoneController.text !=
+        (widget.phone != null
+            ? _phoneMaskFormatter
+                  .formatEditUpdate(
+                    const TextEditingValue(text: ''),
+                    TextEditingValue(
+                      text: widget.phone!.replaceAll(RegExp(r'\D'), ''),
+                    ),
+                  )
+                  .text
+            : '');
+    final avatarChanged = _avatarBase64 != widget.avatarBase64;
+
+    return nameChanged || surnameChanged || phoneChanged || avatarChanged;
+  }
+
+  Future<bool> _showUnsavedChangesDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            content: const Text('Вы действительно хотите отменить изменения?'),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 20,
+            ),
+            actionsPadding: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
+            actions: [
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red, // красный текст
+                    side: null,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () =>
+                      Navigator.of(ctx).pop(true), // подтверждаем выход
+                  child: const Text('Отменить изменения'),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: null,
+                    foregroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(false), // остаёмся
+                  child: const Text('Продолжить изменения'),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   Future<void> _pickImage() async {
     final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
@@ -85,211 +152,213 @@ class _AddContactScreenState extends State<AddContactScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Редактировать' : 'Новый контакт'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // Валидация и отправка результата
-              if (_formKey.currentState!.validate()) {
-                Navigator.pop(context, {
-                  'id': widget.id,
-                  'name': _nameController.text.trim(),
-                  'surname': _surnameController.text.trim(),
-                  'phone': _normalizePhoneNumber(
-                    _phoneMaskFormatter.getUnmaskedText(),
-                  ),
-                  'avatarBase64': _avatarBase64,
-                });
-              }
-            },
-            child: Text(
-              _isEditing ? 'Сохранить' : 'Добавить',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+    return WillPopScope(
+      onWillPop: () async {
+        if (_hasUnsavedChanges()) {
+          return await _showUnsavedChangesDialog(context);
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_isEditing ? 'Редактировать' : 'Новый контакт'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  Navigator.pop(context, {
+                    'id': widget.id,
+                    'name': _nameController.text.trim(),
+                    'surname': _surnameController.text.trim(),
+                    'phone': _normalizePhoneNumber(
+                      _phoneMaskFormatter.getUnmaskedText(),
+                    ),
+                    'avatarBase64': _avatarBase64,
+                  });
+                }
+              },
+              child: Text(
+                _isEditing ? 'Сохранить' : 'Добавить',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Аватар + надпись
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _avatarBase64 != null
-                              ? null
-                              : const Color.fromARGB(255, 117, 115, 115),
-                        ),
-                        child: _avatarBase64 != null
-                            ? ClipOval(
-                                child: Image.memory(
-                                  base64Decode(_avatarBase64!),
-                                  fit: BoxFit.cover,
+          ],
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _avatarBase64 != null
+                                ? null
+                                : const Color.fromARGB(255, 117, 115, 115),
+                          ),
+                          child: _avatarBase64 != null
+                              ? ClipOval(
+                                  child: Image.memory(
+                                    base64Decode(_avatarBase64!),
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  size: 75,
+                                  color: Colors.white,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.person,
-                                size: 75,
-                                color: Colors.white,
-                              ),
+                        ),
                       ),
-                    ),
-                    if (_avatarBase64 == null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: SizedBox(
-                          width: 120, // ширина кнопки
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                63,
-                                59,
-                                59,
+                      if (_avatarBase64 == null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: SizedBox(
+                            width: 120,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  117,
+                                  115,
+                                  115,
+                                ),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                  horizontal: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                elevation: 0,
                               ),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 4,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              elevation: 0,
-                            ),
-                            onPressed: _pickImage,
-                            child: const Text(
-                              'Добавить фото',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
+                              onPressed: _pickImage,
+                              child: const Text(
+                                'Добавить фото',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
                         ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Поле "Имя"
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 80, 74, 74),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  child: TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      hintText: 'Имя',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Поле "Имя" с фоном
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(
-                    255,
-                    80,
-                    74,
-                    74,
-                  ), // очень светлый серый фон
-                  borderRadius: BorderRadius.circular(0),
-                ),
-                child: TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    hintText: 'Имя',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
                     ),
+                    validator: (v) => v!.trim().isEmpty ? 'Введите имя' : null,
                   ),
-                  validator: (v) => v!.trim().isEmpty ? 'Введите имя' : null,
                 ),
-              ),
-              const SizedBox(height: 1),
-              // Поле "Фамилия" с фоном
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 80, 74, 74),
-                  borderRadius: BorderRadius.circular(0),
-                ),
-                child: TextFormField(
-                  controller: _surnameController,
-                  decoration: const InputDecoration(
-                    hintText: 'Фамилия',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  validator: (v) =>
-                      v!.trim().isEmpty ? 'Введите фамилию' : null,
-                ),
-              ),
-              const SizedBox(height: 1),
-              // Поле "Телефон" — без фона (как раньше, или тоже можно добавить)
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 80, 74, 74),
-                  borderRadius: BorderRadius.circular(0),
-                ),
-                child: TextFormField(
-                  controller: _phoneController,
-                  inputFormatters: [_phoneMaskFormatter],
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    hintText: 'Телефон',
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Введите номер телефона';
-                    }
-                    final digitsOnly = RegExp(
-                      r'[0-9]',
-                    ).allMatches(value).map((m) => m.group(0)).join();
-                    if (digitsOnly.length < 11) {
-                      return 'Номер слишком короткий';
-                    }
-                    return null;
-                  },
-                ),
-              ),
+                const SizedBox(height: 1),
 
-              const SizedBox(height: 16),
-
-              // Кнопка удалить
-              if (_isEditing)
-                Center(
-                  child: SizedBox(
-                    width: 120,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, {
-                        'id': widget.id,
-                        'delete': true,
-                      }),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
+                // Поле "Фамилия"
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 80, 74, 74),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  child: TextFormField(
+                    controller: _surnameController,
+                    decoration: const InputDecoration(
+                      hintText: 'Фамилия',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                      child: const Text('Удалить'),
                     ),
+                    validator: (v) =>
+                        v!.trim().isEmpty ? 'Введите фамилию' : null,
                   ),
                 ),
-            ],
+                const SizedBox(height: 1),
+
+                // Поле "Телефон"
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 80, 74, 74),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  child: TextFormField(
+                    controller: _phoneController,
+                    inputFormatters: [_phoneMaskFormatter],
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                      hintText: 'Телефон',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Введите номер телефона';
+                      }
+                      final digitsOnly = RegExp(
+                        r'[0-9]',
+                      ).allMatches(value).map((m) => m.group(0)).join();
+                      if (digitsOnly.length < 11) {
+                        return 'Номер слишком короткий';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Кнопка "Удалить"
+                if (_isEditing)
+                  Center(
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, {
+                          'id': widget.id,
+                          'delete': true,
+                        }),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Удалить'),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -304,16 +373,4 @@ String _normalizePhoneNumber(String rawDigits) {
     }
   }
   return rawDigits;
-}
-
-Widget? _buildClearIcon(TextEditingController controller) {
-  if (kIsWeb) return null; // на вебе не показываем
-  return controller.text.isEmpty
-      ? null
-      : IconButton(
-          icon: const Icon(Icons.clear, size: 18),
-          onPressed: () {
-            controller.clear();
-          },
-        );
 }
